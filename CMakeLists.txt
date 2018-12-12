@@ -8,6 +8,7 @@ find_package(Boost 1.65.1 REQUIRED COMPONENTS system thread filesystem)
 find_package(Threads)
 
 set(project_sources main.cpp server.cpp session.cpp Service.cpp)# Create a list with all .cpp source files
+set(EXECUTABLE_OUTPUT_PATH "final")
 
 add_executable(final ${project_sources})
 target_link_libraries(final ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
