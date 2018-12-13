@@ -32,7 +32,12 @@ using boost::asio::ip::tcp;
 		
 		boost::asio::streambuf::const_buffers_type bufs = m_request.data();
 		std::string line(boost::asio::buffers_begin(bufs), boost::asio::buffers_begin(bufs) + m_request.size());
-		//std::cout << "input line:" << line << std::endl;
+		//std::cout << "input lineON_START:" << line << ". With size:" << line.size() << std::endl;
+		// handling only first line; rest cutting
+		const char whitespace1[] {"\n"};
+		size_t space1 = line.find_first_of(whitespace1);
+		line = line.substr(0, space1);
+		//std::cout << "input lineAFTER_CUTTING:" << line << ". With size:" << line.size() << std::endl;
 
 		std::string request_method;	// HANDLING REQUEST
 		const char whitespace[] {" "};
