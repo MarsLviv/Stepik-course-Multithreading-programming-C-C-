@@ -1,5 +1,6 @@
 #include "server.h"
 
+#include <fstream>
 #include <iostream>			// asio HTTP Server 6.0
 #include <cstdlib>			// 
 #include <boost/bind.hpp>
