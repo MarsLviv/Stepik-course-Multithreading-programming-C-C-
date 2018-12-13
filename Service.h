@@ -1,6 +1,7 @@
 #ifndef SERV_H
 #define SERV_H
 
+#include <fstream>
 #include <iostream>			// asio HTTP Server 5.0
 #include <cstdlib>			// 
 #include <boost/bind.hpp>

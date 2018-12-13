@@ -1,6 +1,7 @@
 #include "Service.h"			// asio HTTP Server 5.0
 
-#include <iostream>			
+#include <iostream>
+#include <fstream>			
 #include <cstdlib>			// 
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
