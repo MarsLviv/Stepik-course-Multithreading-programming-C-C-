@@ -16,7 +16,7 @@ using boost::asio::ip::tcp;
 
 	void Service::start_handling() {
 		//std::cout << "HTTP SERVER service started." << '\n';
-		boost::asio::async_read_until(m_sock, m_request, "\r\n",
+		boost::asio::async_read_until(m_sock, m_request, "\r\n",	//	boost::asio::streambuf m_request;
 			[this](	const boost::system::error_code& ec, std::size_t bytes_transferred) {
 				on_request_line_received(ec, bytes_transferred); }
 		);
@@ -28,42 +28,58 @@ using boost::asio::ip::tcp;
 			<< ". Message: " << ec.message();*/
 			on_finish();	return;
 		}
+		
+		boost::asio::streambuf::const_buffers_type bufs = m_request.data();
+		std::string line(boost::asio::buffers_begin(bufs), boost::asio::buffers_begin(bufs) + m_request.size());
+		//std::cout << "input line:" << line << std::endl;
 
-		// Parse the request line.
-		std::string request_line;
-		std::istream request_stream(&m_request);//  m_request is streambuf with request line
-		std::getline(request_stream, request_line, '\r');// Get line from stream into string; '\r' is optional delimiter
-		// So removing symbol '\n' from the buffer.
-		request_stream.get();// get()  Reads one character and returns it if available. ???
-		// Otherwise, returns Traits::eof() and sets failbit and eofbit.
-		//std::cout << "1:" << request_line << std::endl;
-
-		// Parse the request line.
-		std::string request_method;
-		std::istringstream request_line_stream(request_line);// pass request_line to istringstream
-		request_line_stream >> request_method;
-		//std::cout << "2: request_method:" << request_method << std::endl;
-
-		// support only GET method.
-		if (request_method.compare("GET") != 0) {
+		std::string request_method;	// HANDLING REQUEST
+		const char whitespace[] {" "};
+		const char whitespaceQ[] {"?"};
+		const char whitespaceN[] {"10"};
+		size_t space (line.find_first_not_of(whitespace));//	cutting spaces before line
+		line = line.substr(space, line.size() - space);
+		space = line.find_first_of(whitespace);
+		request_method = line.substr(0, space);
+		//std::cout << "request_method:" << request_method << std::endl;
+		line = line.substr(space + 1, line.size() - space - 1);	// cutting request_method from line
+		if (request_method.compare("GET") != 0) {		// support only GET method
 			//std::cout << "Unsupported method. err code 501" << std::endl;
-			on_finish();	return;
+			on_response_sent(ec, bytes_transferred);	return;
 		}
 
-		request_line_stream >> m_requested_resource;
-		std::string delimiter = "?";
-		m_requested_resource = m_requested_resource.substr(0, m_requested_resource.find(delimiter));
-		//std::cout << "3: requested_resource:" << m_requested_resource << std::endl;
+		// handling resource
+		space = line.find_first_not_of(whitespace);//	cutting spaces before line
+		line = line.substr(space, line.size() - space);
+		space = line.find_first_of(whitespace);
+		m_requested_resource = line.substr(0, space);
+		line = line.substr(space + 1, line.size() - space - 1);	// cutting requested_resource from line
+		space = m_requested_resource.find_first_of(whitespaceQ);	// cutting params
+		//std::cout << "space:" << space << std::endl;
+		m_requested_resource = m_requested_resource.substr(0, space);
+		//std::cout << "m_requested_resource:" << m_requested_resource << std::endl;
 
+		// handling HTTP protocol
+		space = line.find_first_not_of(whitespace);//	cutting spaces before line
+		line = line.substr(space, line.size() - space);
 		std::string request_http_version;
-		request_line_stream >> request_http_version;
-		//std::cout << "4: request_http_version:" << request_http_version << std::endl;
-
+		if (line.size() == 8)
+			request_http_version = line;
+		else if (line.size() < 8){
+			//std::cout << "Unsupported HTTP version or bad request. err code = 505" << std::endl;
+			on_response_sent(ec, bytes_transferred);	return;
+		} else {
+			space = line.find_last_of(whitespaceN);
+			request_http_version = line.substr(0, space + 1);
+		}
 		if (request_http_version.compare("HTTP/1.0") != 0) {
 			//std::cout << "Unsupported HTTP version or bad request. err code = 505" << std::endl;
-			on_finish();	return;
+			on_response_sent(ec, bytes_transferred);	return;
 		}
-
+		//std::cout << "request_http_version:" << request_http_version << std::endl;
+		
+		//on_response_sent(ec, bytes_transferred);
+		
 		// At this point the request line is successfully received and parsed.
 		// Now we have all we need to process the request.
 		process_request();
@@ -81,11 +97,18 @@ using boost::asio::ip::tcp;
 		// trim last '/'
 		const char whitespace[] {"/"};
 		const size_t last (folder_.find_last_not_of(whitespace));
-		folder_.substr(0, (last + 1));
+		//std::cout << "last:" << last << "folder_[last]:" << folder_[last] << std::endl;
+		//std::cout << "folder_:" << folder_ << std::endl;
+		
+		//std::string folder; folder = const_cast<std::string>(folder_);
+		std::string folder = folder_;
+		folder = folder.substr(0, (last + 1));
+		//std::cout << "folder:" << folder << std::endl;
+		
 
 		// combine file_path
 		std::string file_path;
-		file_path += folder_ + "/" + resource_file_path;
+		file_path += folder + "/" + resource_file_path;
 		resource_file_path = file_path;
 
 		if (!boost::filesystem::exists(resource_file_path)) {
@@ -95,7 +118,7 @@ using boost::asio::ip::tcp;
 			m_response_headers += std::string("Content-Type") + ": " + std::string("text/html") + "\r\n";
 			return;
 		}
-
+		
 		std::ifstream resource_fstream( resource_file_path, std::ifstream::binary);
 
 		if (!resource_fstream.is_open()) {

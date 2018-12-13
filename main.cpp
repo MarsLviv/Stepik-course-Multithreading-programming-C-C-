@@ -1,6 +1,6 @@
 #include "server.h"
 
-#include <iostream>			// asio HTTP Server 5.0
+#include <iostream>			// asio HTTP Server 6.0
 #include <cstdlib>			// 
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
@@ -19,13 +19,14 @@ int main(int argc, char* argv[]){//std::cout << "pid:" << getpid() << std::endl;
 	if (pid != 0){ 
 		std::cout << "fork() worked\n"; 
 		//	write pid to file
-		/*std::ofstream ofile;
+		std::ofstream ofile;
 		ofile.open ("pid.txt", std::ofstream::out | std::ofstream::trunc);
 		if ( (ofile.rdstate() & std::ifstream::failbit ) != 0 )
 	    		std::cout << "Error opening 'pid.txt'\n";
+		//pid_t id = getpid();
 		std::string str = std::to_string(pid);
 		ofile << str;
-		ofile.close();*/
+		ofile.close();
 		_exit(0); 
 	}// close parent
 	close(0);	close(1);	close(2);
@@ -39,7 +40,7 @@ int main(int argc, char* argv[]){//std::cout << "pid:" << getpid() << std::endl;
 	
 
 	try {
-		if (argc != 7){// ./final -h 127.0.0.20 -p 22345 -d /home/poma/workM/asioEx/Server5
+		if (argc != 7){// ./final -h 127.0.0.20 -p 12345 -d /home/poma/workM/asioEx/Server6
 			std::cerr << "Usage: -h <ip> -p <port> -d <directory>\n";
 		return 1;
 		}
@@ -93,5 +94,5 @@ int main(int argc, char* argv[]){//std::cout << "pid:" << getpid() << std::endl;
 	}
 
 	return 0;
-}
+}//CC=gcc-7 CXX=g++-7	https://stackoverflow.com/questions/45216648/update-g-but-still-old-version
 
