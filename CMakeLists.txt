@@ -11,7 +11,7 @@ find_package(Boost REQUIRED COMPONENTS system thread filesystem)
 find_package(Threads)
 
 set(project_sources main.cpp server.cpp session.cpp Service.cpp)# Create a list with all .cpp source files
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 
 #target_link_libraries(final PRIVATE pthread)
 #set(EXECUTABLE_OUTPUT_PATH "final")
