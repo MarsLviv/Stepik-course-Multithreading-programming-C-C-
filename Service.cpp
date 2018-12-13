@@ -1,7 +1,7 @@
 #include "Service.h"			// asio HTTP Server 5.0
 
-#include <iostream>
-#include <fstream>			
+#include <iostream>	
+#include <fstream>		
 #include <cstdlib>			// 
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
@@ -120,7 +120,7 @@ using boost::asio::ip::tcp;
 			return;
 		}
 		
-		std::ifstream resource_fstream( resource_file_path, std::ifstream::binary);
+		std::ifstream resource_fstream( resource_file_path, std::ifstream::binary);//?1
 
 		if (!resource_fstream.is_open()) {
 			//std::cout << "Could not open file. err code = 500" << std::endl;
@@ -128,12 +128,12 @@ using boost::asio::ip::tcp;
 		}
 
 		// Find out file size.
-		resource_fstream.seekg(0, std::ifstream::end);// seekg - set position in input sequence
+		resource_fstream.seekg(0, std::ifstream::end);// seekg - set position in input sequence //?2
 		m_resource_size_bytes =	static_cast<std::size_t>(resource_fstream.tellg());//tellg - get position in input sequence
 
 		m_resource_buffer.reset(new char[m_resource_size_bytes]);
 
-		resource_fstream.seekg(std::ifstream::beg);
+		resource_fstream.seekg(std::ifstream::beg);//?3
 		resource_fstream.read(m_resource_buffer.get(), m_resource_size_bytes);
 
 		m_response_headers += std::string("Content-Length") + ": " + std::to_string(m_resource_size_bytes) + "\r\n";
