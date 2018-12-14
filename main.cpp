@@ -63,6 +63,11 @@ int main(int argc, char* argv[]){//std::cout << "pid:" << getpid() << std::endl;
 			//std::cout << "directory not exist" << std::endl;
 			return 1;
 		}
+		// converting "/" to current path
+		if (user_dir.compare("/") == 0){
+			//std::cout << "current_path: " << boost::filesystem::current_path().string() << '\n';
+			user_dir = boost::filesystem::current_path().string();
+		}
 
 		// Block all signals for background thread.
 		sigset_t new_mask;
