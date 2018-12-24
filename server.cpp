@@ -1,7 +1,6 @@
 #include "server.h"
-//#include "session.h"
 
-#include <iostream>			// asio HTTP Server 5.0
+#include <iostream>			// asio HTTP Server 6.0
 #include <cstdlib>			// 
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
