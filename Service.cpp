@@ -214,7 +214,8 @@ bool Service::find_file(const boost::filesystem::path& dir_path, const boost::fi
 		}
 
 		m_sock.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
-
+		//boost::system::error_code ec;
+		m_sock.close( /*ec*/ );
 		on_finish();
 	}
 
