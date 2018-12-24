@@ -175,6 +175,7 @@ bool Service::find_file(const boost::filesystem::path& dir_path, const boost::fi
 
 		m_response_headers += std::string("Content-Length") + ": " + std::to_string(m_resource_size_bytes) + "\r\n";
 		m_response_headers += std::string("Content-Type") + ": " + std::string("text/html") + "\r\n";
+		resource_fstream.close();
 		//std::cout << "m_response_headers:" << m_response_headers << std::endl;
 		//std::cout << "nnn" << std::endl;
 	}
