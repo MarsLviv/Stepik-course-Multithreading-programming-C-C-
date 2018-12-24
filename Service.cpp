@@ -1,7 +1,7 @@
-#include "Service.h"			// asio HTTP Server 7.0
+#include "Service.h"			// asio HTTP Server 5.0
 
-#include <iostream>	
-#include <fstream>		
+#include <iostream>
+#include <fstream>			
 #include <cstdlib>			// 
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
@@ -32,12 +32,7 @@ using boost::asio::ip::tcp;
 		
 		boost::asio::streambuf::const_buffers_type bufs = m_request.data();
 		std::string line(boost::asio::buffers_begin(bufs), boost::asio::buffers_begin(bufs) + m_request.size());
-		//std::cout << "input lineON_START:" << line << ". With size:" << line.size() << std::endl;
-		// handling only first line; rest cutting
-		const char whitespace1[] {"\n"};
-		size_t space1 = line.find_first_of(whitespace1);
-		line = line.substr(0, space1);
-		//std::cout << "input lineAFTER_CUTTING:" << line << ". With size:" << line.size() << std::endl;
+		//std::cout << "input line:" << line << std::endl;
 
 		std::string request_method;	// HANDLING REQUEST
 		const char whitespace[] {" "};
@@ -93,71 +88,39 @@ using boost::asio::ip::tcp;
 		return;
 	}
 
-bool Service::find_file(const boost::filesystem::path& dir_path, const boost::filesystem::path& file_name, 
-				boost::filesystem::path& path_found) {
-	const boost::filesystem::recursive_directory_iterator end;
-	const auto it = std::find_if(boost::filesystem::recursive_directory_iterator(dir_path), end,
-				[&file_name](const boost::filesystem::directory_entry& e) {
-					return e.path().filename() == file_name;
-				});
-	if (it == end) {
-		return false;
-	} else {
-		path_found = it->path();
-		return true;
-	}
-}
-
 	void Service::process_request() {
 		// Read file
-		// trim first '/' in file name
+		// trim first '/'
 		if(m_requested_resource[0] =='/')
 			m_requested_resource.erase(0, 1);
 		std::string resource_file_path = m_requested_resource;
-		// trim last '/' in file name
-		const char whitespace[] {"/"};
-		size_t last (resource_file_path.find_last_not_of(whitespace));
-		resource_file_path = resource_file_path.substr(0, (last + 1));
 
-		// trim last '/' in server's path
-		last = folder_.find_last_not_of(whitespace);
+		// trim last '/'
+		const char whitespace[] {"/"};
+		const size_t last (folder_.find_last_not_of(whitespace));
+		//std::cout << "last:" << last << "folder_[last]:" << folder_[last] << std::endl;
+		//std::cout << "folder_:" << folder_ << std::endl;
+		
+		//std::string folder; folder = const_cast<std::string>(folder_);
 		std::string folder = folder_;
-		//std::cout << "folder1:" << folder << std::endl;
 		folder = folder.substr(0, (last + 1));
-		//std::cout << "folder2:" << folder << std::endl;
+		//std::cout << "folder:" << folder << std::endl;
 		
 
 		// combine file_path
 		std::string file_path;
 		file_path += folder + "/" + resource_file_path;
-		std::string tmp = resource_file_path; // need for recursing search
 		resource_file_path = file_path;
 
-		std::string rpath;//			recursive search
-		const boost::filesystem::path myPath {folder};
-		const boost::filesystem::path myFile {tmp};
-		boost::filesystem::path myFound;
-		bool recpath = false;
-		if (find_file(myPath, myFile, myFound)){
-			//std::cout << "I found this File :" << myFound.string() << std::endl;
-			recpath = true;
-		} else {
-			//std::cout << "I don't found this File" << std::endl;
-		}
-		//std::cout << "recpath:" << recpath << std::endl;
-		if (boost::filesystem::exists(resource_file_path)) {
-			
-		}else if (!recpath && !boost::filesystem::exists(resource_file_path)) {
+		if (!boost::filesystem::exists(resource_file_path)) {
 			m_response_status_code = 404; // Resource not found.
 			m_resource_size_bytes = 0;
 			m_response_headers += std::string("Content-Length") + ": " + std::to_string(m_resource_size_bytes) + "\r\n";
 			m_response_headers += std::string("Content-Type") + ": " + std::string("text/html") + "\r\n";
 			return;
-		}else if(recpath){
-			resource_file_path = myFound.string();	
 		}
 		
-		std::ifstream resource_fstream( resource_file_path, std::ifstream::binary);//?1
+		std::ifstream resource_fstream( resource_file_path, std::ifstream::binary);
 
 		if (!resource_fstream.is_open()) {
 			//std::cout << "Could not open file. err code = 500" << std::endl;
@@ -165,12 +128,12 @@ bool Service::find_file(const boost::filesystem::path& dir_path, const boost::fi
 		}
 
 		// Find out file size.
-		resource_fstream.seekg(0, std::ifstream::end);// seekg - set position in input sequence //?2
+		resource_fstream.seekg(0, std::ifstream::end);// seekg - set position in input sequence
 		m_resource_size_bytes =	static_cast<std::size_t>(resource_fstream.tellg());//tellg - get position in input sequence
 
 		m_resource_buffer.reset(new char[m_resource_size_bytes]);
 
-		resource_fstream.seekg(std::ifstream::beg);//?3
+		resource_fstream.seekg(std::ifstream::beg);
 		resource_fstream.read(m_resource_buffer.get(), m_resource_size_bytes);
 
 		m_response_headers += std::string("Content-Length") + ": " + std::to_string(m_resource_size_bytes) + "\r\n";

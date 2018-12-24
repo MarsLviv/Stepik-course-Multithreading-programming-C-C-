@@ -16,8 +16,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 #target_link_libraries(final PRIVATE pthread)
 #set(EXECUTABLE_OUTPUT_PATH "final")
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
-#sset(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fpermissive")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fpermissive")
 
 add_executable(${PROJECT_NAME} ${project_sources})
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} pthread)

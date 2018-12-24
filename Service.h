@@ -2,7 +2,7 @@
 #define SERV_H
 
 #include <fstream>
-#include <iostream>			// asio HTTP Server 7.0
+#include <iostream>			// asio HTTP Server 5.0
 #include <cstdlib>			// 
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
@@ -36,8 +36,6 @@ public:
 	void start_handling();
 private:
 	void on_request_line_received(const boost::system::error_code& ec, std::size_t bytes_transferred);
-	bool find_file(const boost::filesystem::path& dir_path, const boost::filesystem::path& file_name,
-			boost::filesystem::path& path_found);
 	void process_request();
 	void send_response();
 	void on_response_sent(const boost::system::error_code& ec, std::size_t bytes_transferred);
