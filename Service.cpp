@@ -32,12 +32,12 @@ using boost::asio::ip::tcp;
 		
 		boost::asio::streambuf::const_buffers_type bufs = m_request.data();
 		std::string line(boost::asio::buffers_begin(bufs), boost::asio::buffers_begin(bufs) + m_request.size());
-		//std::cout << "input lineON_START:" << line << ". With size:" << line.size() << std::endl;
+		//std::cout << "input lineON_START:" << line /*<< ". With size:" << line.size()*/ << std::endl;//27- 01 OK
 		// handling only first line; rest cutting
 		const char whitespace1[] {"\n"};
 		size_t space1 = line.find_first_of(whitespace1);
 		line = line.substr(0, space1);
-		//std::cout << "input lineAFTER_CUTTING:" << line << ". With size:" << line.size() << std::endl;
+		//std::cout << "input lineAFTER_CUTTING:" << line /*<< ". With size:" << line.size()*/ << std::endl; // OK
 
 		std::string request_method;	// HANDLING REQUEST
 		const char whitespace[] {" "};
@@ -47,7 +47,7 @@ using boost::asio::ip::tcp;
 		line = line.substr(space, line.size() - space);
 		space = line.find_first_of(whitespace);
 		request_method = line.substr(0, space);
-		//std::cout << "request_method:" << request_method << std::endl;
+		//std::cout << "request_method:" << request_method << std::endl; // OK
 		line = line.substr(space + 1, line.size() - space - 1);	// cutting request_method from line
 		if (request_method.compare("GET") != 0) {		// support only GET method
 			//std::cout << "Unsupported method. err code 501" << std::endl;
@@ -63,7 +63,7 @@ using boost::asio::ip::tcp;
 		space = m_requested_resource.find_first_of(whitespaceQ);	// cutting params
 		//std::cout << "space:" << space << std::endl;
 		m_requested_resource = m_requested_resource.substr(0, space);
-		//std::cout << "m_requested_resource:" << m_requested_resource << std::endl;
+		//std::cout << "m_requested_resource:" << m_requested_resource << std::endl; // with '/'
 
 		// handling HTTP protocol
 		space = line.find_first_not_of(whitespace);//	cutting spaces before line
@@ -82,7 +82,7 @@ using boost::asio::ip::tcp;
 			//std::cout << "Unsupported HTTP version or bad request. err code = 505" << std::endl;
 			on_response_sent(ec, bytes_transferred);	return;
 		}
-		//std::cout << "request_http_version:" << request_http_version << std::endl;
+		//std::cout << "request_http_version:" << request_http_version << std::endl;// OK
 		
 		//on_response_sent(ec, bytes_transferred);
 		
@@ -118,33 +118,48 @@ bool Service::find_file(const boost::filesystem::path& dir_path, const boost::fi
 		const char whitespace[] {"/"};
 		size_t last (resource_file_path.find_last_not_of(whitespace));
 		resource_file_path = resource_file_path.substr(0, (last + 1));
+		//std::cout << "resource_file_path:" << resource_file_path << std::endl;// OK
 
 		// trim last '/' in server's path
-		last = folder_.find_last_not_of(whitespace);
-		std::string folder = folder_;
-		//std::cout << "folder1:" << folder << std::endl;
-		folder = folder.substr(0, (last + 1));
-		//std::cout << "folder2:" << folder << std::endl;
-		
+		std::string folder;
+		//std::cout << "folder_:" << folder_ << std::endl;// OK
+		if (folder_.size() > 1){
+			last = folder_.find_last_not_of(whitespace);
+			folder = folder_;
+			//std::cout << "folder1:" << folder << std::endl;
+			folder = folder.substr(0, (last + 1));
+			//std::cout << "folder2:" << folder << std::endl;
+		}else {
+			folder = folder_;
+		}
+		//std::cout << "folder:" << folder << std::endl; // OK
 
 		// combine file_path
 		std::string file_path;
-		file_path += folder + "/" + resource_file_path;
+		if (folder.size() > 1)
+			file_path += folder + "/" + resource_file_path;
+		else
+			file_path += folder + resource_file_path;
 		std::string tmp = resource_file_path; // need for recursing search
 		resource_file_path = file_path;
+		//std::cout << "resource_file_path:" << resource_file_path << std::endl;// OK
 
 		std::string rpath;//			recursive search
 		const boost::filesystem::path myPath {folder};
 		const boost::filesystem::path myFile {tmp};
 		boost::filesystem::path myFound;
 		bool recpath = false;
-		if (find_file(myPath, myFile, myFound)){
-			//std::cout << "I found this File :" << myFound.string() << std::endl;
-			recpath = true;
-		} else {
-			//std::cout << "I don't found this File" << std::endl;
+		std::cout << "myPath:" << myPath.string() << std::endl;
+		std::cout << "myFile:" << myFile.string() << std::endl;
+		if (folder_.size() > 1){
+			if (find_file(myPath, myFile, myFound)){
+				std::cout << "I found this File :" << myFound.string() << std::endl;
+				recpath = true;
+			} else {
+				std::cout << "I don't found this File" << std::endl;
+			}
 		}
-		//std::cout << "recpath:" << recpath << std::endl;
+		std::cout << "recpath:" << recpath << std::endl;
 		if (boost::filesystem::exists(resource_file_path)) {
 			
 		}else if (!recpath && !boost::filesystem::exists(resource_file_path)) {
