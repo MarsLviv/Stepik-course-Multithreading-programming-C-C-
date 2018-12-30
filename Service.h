@@ -2,7 +2,7 @@
 #define SERV_H
 
 #include <fstream>
-#include <iostream>			// asio HTTP Server 7.0
+#include <iostream>			// asio HTTP Server 9.0
 #include <cstdlib>			// 
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
@@ -31,13 +31,13 @@ class Service {// provide HTTP service
 	enum { max_length = 1024 };
 	char data_[max_length];
 	const std::string& folder_;
+	bool logging;
+	std::ofstream ofile;// {"sevice.log", std::ofstream::out | std::ofstream::trunc};
 public:
 	Service(tcp::socket & socket_, const std::string& folder);
 	void start_handling();
 private:
 	void on_request_line_received(const boost::system::error_code& ec, std::size_t bytes_transferred);
-	bool find_file(const boost::filesystem::path& dir_path, const boost::filesystem::path& file_name,
-			boost::filesystem::path& path_found);
 	void process_request();
 	void send_response();
 	void on_response_sent(const boost::system::error_code& ec, std::size_t bytes_transferred);

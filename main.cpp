@@ -1,7 +1,7 @@
 #include "server.h"
-
 #include <fstream>
-#include <iostream>			// asio HTTP Server 6.0
+
+#include <iostream>			// asio HTTP Server 9.0
 #include <cstdlib>			// 
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
@@ -17,16 +17,14 @@ int main(int argc, char* argv[]){//std::cout << "pid:" << getpid() << std::endl;
 	// demonization
 	pid_t pid;
 	if ((pid = fork()) < 0){ std::cout << "fork() failed\n"; return 1; }
-	if (pid != 0){ 
-		//std::cout << "fork() worked\n"; 
-		//	write pid to file
-		/*std::ofstream ofile;
-		ofile.open ("pid.txt", std::ofstream::out | std::ofstream::trunc);
+	if (pid != 0){  //	write pid to file
+		std::ofstream ofile;
+		ofile.open ("main.log", std::ofstream::out | std::ofstream::trunc);
 		if ( (ofile.rdstate() & std::ifstream::failbit ) != 0 )
-	    		std::cout << "Error opening 'pid.txt'\n";
+	    		std::cout << "Error opening main.log" << std::endl;
 		std::string str = std::to_string(pid);
-		ofile << str;
-		ofile.close();*/
+		ofile << "demonized with pid:" << str;
+		ofile.close();
 		_exit(0); 
 	}// close parent
 	close(0);	close(1);	close(2);
@@ -37,10 +35,8 @@ int main(int argc, char* argv[]){//std::cout << "pid:" << getpid() << std::endl;
 			process. The calling process will be the only process in this new process group and in this new session.*/
 	if (chdir("/") != 0){ std::cout << "chdir(/) failed\n"; return 1; }
 
-	
-
 	try {
-		if (argc != 7){// ./final -h 127.0.0.20 -p 12345 -d /home/poma/workM/asioEx/Server6
+		if (argc != 7){
 			std::cerr << "Usage: -h <ip> -p <port> -d <directory>\n";
 		return 1;
 		}
@@ -56,18 +52,12 @@ int main(int argc, char* argv[]){//std::cout << "pid:" << getpid() << std::endl;
 			};
 		};
 		// checking corectness user_dir
-		//boost::filesystem::path p(m_requested_resource);
-		if (boost::filesystem::exists(user_dir)){
+		/*if (boost::filesystem::exists(user_dir)){
 			//std::cout << "directory exist" << std::endl;
 		} else {
 			//std::cout << "directory not exist" << std::endl;
 			return 1;
-		}
-		// converting "/" to current path
-		if (user_dir.compare("/") == 0){
-			//std::cout << "current_path: " << boost::filesystem::current_path().string() << '\n';
-			user_dir = boost::filesystem::current_path().string();
-		}
+		}*/
 
 		// Block all signals for background thread.
 		sigset_t new_mask;

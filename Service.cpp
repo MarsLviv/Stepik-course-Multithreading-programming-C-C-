@@ -1,4 +1,4 @@
-#include "Service.h"			// asio HTTP Server 7.0
+#include "Service.h"			// asio HTTP Server 9.0
 
 #include <iostream>	
 #include <fstream>		
@@ -12,32 +12,45 @@
 #include <boost/thread/thread.hpp>
 using boost::asio::ip::tcp;
 
-	Service::Service(tcp::socket & socket_, const std::string& folder) :
-		m_sock(socket_), m_request(4096), m_response_status_code(200), m_resource_size_bytes(0), folder_(folder) {};
+	Service::Service(tcp::socket & socket_, const std::string& folder) : logging {true},
+		m_sock(socket_), m_request(4096), m_response_status_code(200), m_resource_size_bytes(0), folder_(folder) {
+		if (logging){
+			ofile.open ("/home/box/sevice.log", std::ofstream::out | std::ofstream::trunc);
+			ofile.open ("/home/poma/workM/asioEx/Server9/sevice.log", std::ofstream::out | std::ofstream::trunc); 
+			if ( (ofile.rdstate() & std::ifstream::failbit ) != 0 ){
+		    		std::cout << "Error opening 'sevice.log" << std::endl;
+				logging = false;
+			}
+		};
+		ofile << __FUNCTION__ << "() runing." << std::endl;
+	};
 
 	void Service::start_handling() {
 		//std::cout << "HTTP SERVER service started." << '\n';
+		if (logging) ofile << __FUNCTION__ << "()" <<std::endl;
+
 		boost::asio::async_read_until(m_sock, m_request, "\r\n",	//	boost::asio::streambuf m_request;
 			[this](	const boost::system::error_code& ec, std::size_t bytes_transferred) {
 				on_request_line_received(ec, bytes_transferred); }
 		);
+	
 	};
 
 	void Service::on_request_line_received(const boost::system::error_code& ec, std::size_t bytes_transferred){
 		if (ec != 0) {
-			/*std::cout << "Error occured in on_request_line_received(). Error code = " << ec.value() 
-			<< ". Message: " << ec.message();*/
+			if (logging) ofile << "Error occured in on_request_line_received(). Error code = " << ec.value() 
+			<< ". Message: " << ec.message();
 			on_finish();	return;
 		}
 		
 		boost::asio::streambuf::const_buffers_type bufs = m_request.data();
 		std::string line(boost::asio::buffers_begin(bufs), boost::asio::buffers_begin(bufs) + m_request.size());
-		//std::cout << "input lineON_START:" << line /*<< ". With size:" << line.size()*/ << std::endl;//27- 01 OK
+		if (logging) ofile << __FUNCTION__; if (logging) ofile << "()" << std::endl;
+		if (logging) ofile << "\tinput lineON_START:" << line << std::endl;
 		// handling only first line; rest cutting
 		const char whitespace1[] {"\n"};
 		size_t space1 = line.find_first_of(whitespace1);
 		line = line.substr(0, space1);
-		//std::cout << "input lineAFTER_CUTTING:" << line /*<< ". With size:" << line.size()*/ << std::endl; // OK
 
 		std::string request_method;	// HANDLING REQUEST
 		const char whitespace[] {" "};
@@ -47,10 +60,10 @@ using boost::asio::ip::tcp;
 		line = line.substr(space, line.size() - space);
 		space = line.find_first_of(whitespace);
 		request_method = line.substr(0, space);
-		//std::cout << "request_method:" << request_method << std::endl; // OK
+		if (logging) ofile << "\trequest_method:"; if (logging) ofile << request_method << std::endl;
 		line = line.substr(space + 1, line.size() - space - 1);	// cutting request_method from line
 		if (request_method.compare("GET") != 0) {		// support only GET method
-			//std::cout << "Unsupported method. err code 501" << std::endl;
+			if (logging) ofile << "\tUnsupported method. err code 501" << std::endl;
 			on_response_sent(ec, bytes_transferred);	return;
 		}
 
@@ -61,9 +74,9 @@ using boost::asio::ip::tcp;
 		m_requested_resource = line.substr(0, space);
 		line = line.substr(space + 1, line.size() - space - 1);	// cutting requested_resource from line
 		space = m_requested_resource.find_first_of(whitespaceQ);	// cutting params
-		//std::cout << "space:" << space << std::endl;
+		
 		m_requested_resource = m_requested_resource.substr(0, space);
-		//std::cout << "m_requested_resource:" << m_requested_resource << std::endl; // with '/'
+		//if (logging) ofile<<"\tm_requested_resource:"; if (logging) ofile << m_requested_resource << std::endl;// with '/'
 
 		// handling HTTP protocol
 		space = line.find_first_not_of(whitespace);//	cutting spaces before line
@@ -72,17 +85,17 @@ using boost::asio::ip::tcp;
 		if (line.size() == 8)
 			request_http_version = line;
 		else if (line.size() < 8){
-			//std::cout << "Unsupported HTTP version or bad request. err code = 505" << std::endl;
+			//if (logging) ofile << "\tUnsupported HTTP version or bad request. err code = 505" << std::endl;
 			on_response_sent(ec, bytes_transferred);	return;
 		} else {
 			space = line.find_last_of(whitespaceN);
 			request_http_version = line.substr(0, space + 1);
 		}
 		if (request_http_version.compare("HTTP/1.0") != 0) {
-			//std::cout << "Unsupported HTTP version or bad request. err code = 505" << std::endl;
+			if (logging) ofile << "\tUnsupported HTTP version or bad request. err code = 505" << std::endl;
 			on_response_sent(ec, bytes_transferred);	return;
 		}
-		//std::cout << "request_http_version:" << request_http_version << std::endl;// OK
+		if (logging) ofile << "\trequest_http_version:"; if (logging) ofile << request_http_version << std::endl;
 		
 		//on_response_sent(ec, bytes_transferred);
 		
@@ -93,22 +106,8 @@ using boost::asio::ip::tcp;
 		return;
 	}
 
-bool Service::find_file(const boost::filesystem::path& dir_path, const boost::filesystem::path& file_name, 
-				boost::filesystem::path& path_found) {
-	const boost::filesystem::recursive_directory_iterator end;
-	const auto it = std::find_if(boost::filesystem::recursive_directory_iterator(dir_path), end,
-				[&file_name](const boost::filesystem::directory_entry& e) {
-					return e.path().filename() == file_name;
-				});
-	if (it == end) {
-		return false;
-	} else {
-		path_found = it->path();
-		return true;
-	}
-}
-
 	void Service::process_request() {
+		if (logging) ofile << __FUNCTION__; if (logging) ofile << "()" << std::endl;
 		// Read file
 		// trim first '/' in file name
 		if(m_requested_resource[0] =='/')
@@ -118,11 +117,10 @@ bool Service::find_file(const boost::filesystem::path& dir_path, const boost::fi
 		const char whitespace[] {"/"};
 		size_t last (resource_file_path.find_last_not_of(whitespace));
 		resource_file_path = resource_file_path.substr(0, (last + 1));
-		//std::cout << "resource_file_path:" << resource_file_path << std::endl;// OK
+		if (logging) ofile << "\tresource_file_path:";  if (logging) ofile << resource_file_path << std::endl;
 
 		// trim last '/' in server's path
 		std::string folder;
-		//std::cout << "folder_:" << folder_ << std::endl;// OK
 		if (folder_.size() > 1){
 			last = folder_.find_last_not_of(whitespace);
 			folder = folder_;
@@ -132,7 +130,6 @@ bool Service::find_file(const boost::filesystem::path& dir_path, const boost::fi
 		}else {
 			folder = folder_;
 		}
-		//std::cout << "folder:" << folder << std::endl; // OK
 
 		// combine file_path
 		std::string file_path;
@@ -140,68 +137,47 @@ bool Service::find_file(const boost::filesystem::path& dir_path, const boost::fi
 			file_path += folder + "/" + resource_file_path;
 		else
 			file_path += folder + resource_file_path;
-		std::string tmp = resource_file_path; // need for recursing search
 		resource_file_path = file_path;
-		//std::cout << "resource_file_path:" << resource_file_path << std::endl;// OK
+		if (logging) ofile << "\tresource_file_path:"; if (logging) ofile << resource_file_path << std::endl;
 
-		std::string rpath;//			recursive search
-		const boost::filesystem::path myPath {folder};
-		const boost::filesystem::path myFile {tmp};
-		boost::filesystem::path myFound;
-		bool recpath = false;
-		std::cout << "myPath:" << myPath.string() << std::endl;
-		std::cout << "myFile:" << myFile.string() << std::endl;
-		if (folder_.size() > 1){
-			if (find_file(myPath, myFile, myFound)){
-				std::cout << "I found this File :" << myFound.string() << std::endl;
-				recpath = true;
-			} else {
-				std::cout << "I don't found this File" << std::endl;
-			}
-		}
-		std::cout << "recpath:" << recpath << std::endl;
-		if (boost::filesystem::exists(resource_file_path)) {
-			
-		}else if (!recpath && !boost::filesystem::exists(resource_file_path)) {
+		if (!boost::filesystem::exists(resource_file_path)) {
 			m_response_status_code = 404; // Resource not found.
 			m_resource_size_bytes = 0;
 			m_response_headers += std::string("Content-Length") + ": " + std::to_string(m_resource_size_bytes) + "\r\n";
 			m_response_headers += std::string("Content-Type") + ": " + std::string("text/html") + "\r\n";
-			return;
-		}else if(recpath){
-			resource_file_path = myFound.string();	
+			return;	
 		}
 		
-		std::ifstream resource_fstream( resource_file_path, std::ifstream::binary);//?1
+		std::ifstream resource_fstream( resource_file_path, std::ifstream::binary);
 
 		if (!resource_fstream.is_open()) {
-			//std::cout << "Could not open file. err code = 500" << std::endl;
+			if (logging) ofile << "\tCould not open file. err code = 500" << std::endl;
 			return;
 		}
 
 		// Find out file size.
-		resource_fstream.seekg(0, std::ifstream::end);// seekg - set position in input sequence //?2
+		resource_fstream.seekg(0, std::ifstream::end);// seekg - set position in input sequence 
 		m_resource_size_bytes =	static_cast<std::size_t>(resource_fstream.tellg());//tellg - get position in input sequence
 
 		m_resource_buffer.reset(new char[m_resource_size_bytes]);
 
-		resource_fstream.seekg(std::ifstream::beg);//?3
+		resource_fstream.seekg(std::ifstream::beg);
 		resource_fstream.read(m_resource_buffer.get(), m_resource_size_bytes);
 
 		m_response_headers += std::string("Content-Length") + ": " + std::to_string(m_resource_size_bytes) + "\r\n";
 		m_response_headers += std::string("Content-Type") + ": " + std::string("text/html") + "\r\n";
 		resource_fstream.close();
-		//std::cout << "m_response_headers:" << m_response_headers << std::endl;
-		//std::cout << "nnn" << std::endl;
+		if (logging) ofile << "\tm_response_headers:" << m_response_headers << std::endl;
 	}
 
 	void Service::send_response()  {// GET mf HTTP/1.0  GET /mf HTTP/1.0  GET mf?par=45 HTTP/1.0  GET /mf?par=45 HTTP/1.0
+		if (logging) ofile << __FUNCTION__; if (logging) ofile << "()" << std::endl;
 		m_sock.shutdown(boost::asio::ip::tcp::socket::shutdown_receive);// GET CMakeLists.txt HTTP/1.0
 
 		auto status_line = http_status_table.at(m_response_status_code);
 
 		m_response_status_line = std::string("HTTP/1.0 ") + status_line + "\r\n";
-		//std::cout << "m_response_status_line: " << m_response_status_line << std::endl;
+		if (logging) ofile << "\tm_response_status_line: "; if (logging) ofile << m_response_status_line << std::endl;
 
 		m_response_headers += "\r\n";
 
@@ -224,8 +200,9 @@ bool Service::find_file(const boost::filesystem::path& dir_path, const boost::fi
 	}
 
 	void Service::on_response_sent(const boost::system::error_code& ec, std::size_t bytes_transferred){
+		if (logging) ofile << __FUNCTION__; if (logging) ofile << "()" << std::endl;
 		if (ec != 0) {
-			//std::cout << "Error occured! Error code = "<< ec.value()<< ". Message: " << ec.message();
+			if (logging) ofile << "\tError occured! Error code = "<< ec.value()<< ". Message: " << ec.message();
 		}
 
 		m_sock.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
@@ -235,6 +212,9 @@ bool Service::find_file(const boost::filesystem::path& dir_path, const boost::fi
 	}
 
 	// Here we perform the cleanup.
-	void Service::on_finish() {//std::cout << "on_finish" << std::endl;
+	void Service::on_finish() {
+		if (logging) ofile << __FUNCTION__; if (logging) ofile << "()" << std::endl;
+		if (logging) ofile.close();
+		//std::cout << "\tError occured! Error code\n";
 		delete this;
 	}
