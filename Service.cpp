@@ -15,8 +15,8 @@ using boost::asio::ip::tcp;
 	Service::Service(tcp::socket & socket_, const std::string& folder) : logging {true},
 		m_sock(socket_), m_request(4096), m_response_status_code(200), m_resource_size_bytes(0), folder_(folder) {
 		if (logging){
-			ofile.open ("/home/box/sevice.log", std::ofstream::out | std::ofstream::trunc);
-			ofile.open ("/home/poma/workM/asioEx/Server9/sevice.log", std::ofstream::out | std::ofstream::trunc); 
+			ofile.open ("/home/box/service.log", std::ofstream::out | std::ofstream::trunc);
+			//ofile.open ("/home/poma/workM/asioEx/Server9/service.log", std::ofstream::out | std::ofstream::trunc); 
 			if ( (ofile.rdstate() & std::ifstream::failbit ) != 0 ){
 		    		std::cout << "Error opening 'sevice.log" << std::endl;
 				logging = false;
